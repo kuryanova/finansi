@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Финансовый трекер</title>
+
+<!-- ============================================
+     ШРИФТЫ
+     ============================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   ПЕРЕМЕННЫЕ ТЕМЫ (стиль Notion Dark)
+   ============================================ */
+:root {
+  /* Базовые цвета фона (как в Notion Dark) */
+  --bg-primary: #191919;
+  --bg-secondary: #202020;
+  --bg-tertiary: #2a2a2a;
+  --bg-hover: #2f2f2f;
+  --bg-card: #1f1f1f;
+
+  /* Бордеры */
+  --border: rgba(255, 255, 255, 0.094);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  /* Текст */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.64);
+  --text-tertiary: rgba(255, 255, 255, 0.44);
+  --text-muted: rgba(255, 255, 255, 0.28);
+
+  /* Акценты по категориям (мягкие, как в Notion) */
+  --c-income: #4f9d69;
+  --c-mandatory: #d99a5f;
+  --c-credit: #d96b6b;
+  --c-food: #e6c068;
+  --c-cat: #b88adb;
+  --c-health: #6db1d9;
+  --c-shopping: #d986b8;
+  --c-savings: #5fb09c;
+
+  /* Системные */
+  --accent: #5fb09c;
+  --warning: #e6c068;
+  --danger: #d96b6b;
+  --success: #4f9d69;
+
+  /* Скругления */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* Тени */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+
+  /* Шрифты */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Manrope', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+/* ============================================
+   БАЗА
+   ============================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--bg-hover); }
+
+/* ============================================
+   ЛЕЙАУТ
+   ============================================ */
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 28px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.sidebar-header {
+  padding: 0 8px;
+}
+.sidebar-header .logo {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.sidebar-header .sub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0 8px 6px;
+  font-weight: 600;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav-item.active { background: var(--bg-tertiary); color: var(--text-primary); }
+
+.nav-item .left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.nav-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nav-item .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-item .badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---------- Main ---------- */
+.main {
+  padding: 32px 40px 80px;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Кнопки ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--r-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  transition: background 0.12s, border-color 0.12s, transform 0.06s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.btn:active { transform: scale(0.98); }
+
+.btn.primary {
+  background: var(--accent);
+  color: #0d0d0d;
+  border-color: transparent;
+}
+.btn.primary:hover { background: #6cc0ac; }
+
+.btn.ghost {
+  background: transparent;
+}
+.btn.ghost:hover { background: var(--bg-tertiary); }
+
+.btn.icon {
+  padding: 8px;
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+}
+
+/* ---------- Карточки ---------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* ============================================
+   ОБЗОР (Dashboard)
+   ============================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.stat-card:hover { border-color: var(--border-strong); }
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.stat-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+.stat-card .accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+/* ---------- Двухколоночный лейаут на странице обзора ---------- */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+}
+
+/* ---------- График ---------- */
+.chart-wrap {
+  margin-top: 12px;
+}
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 200px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.chart-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.chart-bar {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: background 0.15s;
+  min-height: 2px;
+  cursor: pointer;
+}
+.chart-bar:hover { background: var(--accent); }
+.chart-bar .tip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-strong);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.chart-bar:hover .tip { opacity: 1; }
+.chart-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* ---------- Категории-прогрессы ---------- */
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cat-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.cat-row-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.cat-row-name .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.cat-row-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.cat-row-amount .limit { color: var(--text-muted); }
+.cat-row-amount .warn { color: var(--warning); }
+.cat-row-amount .over { color: var(--danger); }
+
+.progress {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: var(--accent);
+}
+
+/* ---------- Боковой блок ---------- */
+.aside-card { margin-bottom: 16px; }
+
+.balance-big {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.balance-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.balance-meta .l { color: var(--text-tertiary); }
+.balance-meta .v { font-family: var(--font-mono); }
+.v.positive { color: var(--success); }
+.v.negative { color: var(--danger); }
+
+/* ---------- Предупреждения ---------- */
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.alert {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--warning);
+  font-size: 13px;
+}
+.alert.danger { border-left-color: var(--danger); }
+.alert .a-title { color: var(--text-primary); font-weight: 500; }
+.alert .a-sub { color: var(--text-tertiary); font-size: 12px; margin-top: 2px; }
+.alert-empty {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 12px;
+  text-align: center;
+}
+
+/* ============================================
+   ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ
+   ============================================ */
+.bills-summary {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.bills-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.bills-summary-row:last-child { margin-bottom: 0; }
+.bills-summary-row .l { color: var(--text-tertiary); }
+.bills-summary-row .v { font-family: var(--font-mono); color: var(--text-primary); }
+
+.bills-progress {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.bills-progress-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 480px;
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.bill-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  transition: border-color 0.12s, background 0.12s;
+  position: relative;
+}
+.bill-item:hover { border-color: var(--border); background: var(--bg-tertiary); }
+.bill-item.paid { opacity: 0.55; }
+.bill-item.overdue:not(.paid) { border-color: rgba(217, 107, 107, 0.3); }
+
+/* Кастомный чекбокс */
+.bill-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.bill-check:hover { border-color: var(--text-tertiary); }
+.bill-item.paid .bill-check {
+  background: var(--success);
+  border-color: var(--success);
+}
+.bill-item.paid .bill-check::after {
+  content: '';
+  width: 5px; height: 9px;
+  border: solid #0d0d0d;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.bill-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bill-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.bill-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bill-item.paid .bill-name { text-decoration: line-through; color: var(--text-secondary); }
+.bill-amount {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.bill-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  flex-wrap: wrap;
+}
+.bill-meta .sep { color: var(--text-muted); }
+.bill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+.bill-tag.regular { color: var(--c-health); }
+.bill-tag.once { color: var(--c-mandatory); }
+.bill-meta .due-soon { color: var(--warning); }
+.bill-meta .overdue { color: var(--danger); }
+
+.bill-note {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.bill-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s;
+  align-items: flex-start;
+}
+.bill-item:hover .bill-actions { opacity: 1; }
+.bill-act-btn {
+  width: 24px; height: 24px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: background 0.12s, color 0.12s;
+}
+.bill-act-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+.bill-act-btn.del:hover { color: var(--danger); }
+
+/* ============================================
+   ТРАНЗАКЦИИ
+   ============================================ */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-input-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.search-input {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: border-color 0.12s;
+}
+.search-input:focus { border-color: var(--border-strong); }
+.search-input::placeholder { color: var(--text-muted); }
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  color: var(--text-muted);
+}
+
+.select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.select:hover { background: var(--bg-hover); }
+
+/* ---------- Табы ---------- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  width: fit-content;
+}
+.tab {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-radius: var(--r-sm);
+  transition: background 0.12s, color 0.12s;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ---------- Таблица транзакций ---------- */
+.tx-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.tx-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 160px 140px 32px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  transition: background 0.1s;
+}
+.tx-row:last-child { border-bottom: none; }
+.tx-row.head {
+  background: var(--bg-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+.tx-row.body:hover { background: var(--bg-hover); }
+
+.tx-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.tx-desc {
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tx-desc .note {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.tx-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 3px 10px;
+  border-radius: 999px;
+  width: fit-content;
+}
+.tx-cat .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.tx-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: right;
+  font-weight: 500;
+}
+.tx-amount.income { color: var(--success); }
+.tx-amount.expense { color: var(--text-primary); }
+
+.tx-del {
+  width: 28px; height: 28px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.tx-row.body:hover .tx-del { opacity: 1; }
+.tx-del:hover { background: var(--bg-tertiary); color: var(--danger); }
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+.empty-state .title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* ============================================
+   КАТЕГОРИИ (лимиты + раскрытие)
+   ============================================ */
+.cat-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cat-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  transition: border-color 0.12s;
+}
+.cat-block:hover { border-color: var(--border-strong); }
+
+.cat-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cat-head:hover { background: var(--bg-hover); }
+
+.cat-head .dot { width: 10px; height: 10px; border-radius: 50%; }
+.cat-head .name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.cat-head .sum {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cat-head .progress {
+  width: 120px;
+}
+.cat-head .arrow {
+  width: 18px; height: 18px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.cat-block.open .cat-head .arrow { transform: rotate(90deg); }
+
+.cat-body {
+  display: none;
+  padding: 0 22px 18px;
+  border-top: 1px solid var(--border);
+}
+.cat-block.open .cat-body { display: block; }
+
+.cat-body-inner {
+  padding-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+.field input,
+.field select,
+.field textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: border-color 0.12s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus { border-color: var(--border-strong); }
+
+.cat-tx-list {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.cat-tx-list-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cat-tx-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.cat-tx-item:last-child { border-bottom: none; }
+.cat-tx-item .l { color: var(--text-secondary); }
+.cat-tx-item .v { font-family: var(--font-mono); color: var(--text-primary); }
+
+/* ============================================
+   МОДАЛКА ДОБАВЛЕНИЯ
+   ============================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-backdrop.open { display: flex; animation: fade 0.15s; }
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.modal h3 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.modal .sub {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: 22px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.form-grid .full { grid-column: 1 / -1; }
+
+.type-toggle {
+  display: flex;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+.type-toggle button {
+  flex: 1;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-radius: var(--r-sm);
+  transition: background 0.12s, color 0.12s;
+}
+.type-toggle button.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ============================================
+   НАСТРОЙКИ — Firebase
+   ============================================ */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.kv:last-child { border-bottom: none; }
+.kv .l { color: var(--text-secondary); }
+.kv .v { font-family: var(--font-mono); color: var(--text-primary); font-size: 13px; }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.checkbox-row input { display: none; }
+.checkbox-row .cb {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.checkbox-row input:checked + .cb {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.checkbox-row input:checked + .cb::after {
+  content: '';
+  width: 5px; height: 9px;
+  border: solid #0d0d0d;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.note-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.note-box strong { color: var(--text-primary); }
+
+/* ============================================
+   СТРАНИЦЫ
+   ============================================ */
+.page { display: none; }
+.page.active { display: block; animation: fadePage 0.2s; }
+@keyframes fadePage { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================
+   ИНДИКАТОР СИНХРОНИЗАЦИИ
+   ============================================ */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 6px 8px;
+}
+.sync-status .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted);
+}
+.sync-status.local .dot { background: var(--text-tertiary); }
+.sync-status.cloud .dot { background: var(--success); }
+.sync-status.error .dot { background: var(--danger); }
+
+/* ============================================
+   МОБАЙЛ
+   ============================================ */
+.mobile-menu-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-primary);
+}
+
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .overview-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 780px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    z-index: 50;
+    width: 280px;
+    left: -300px;
+    transition: left 0.25s;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.open { left: 0; }
+  .main { padding: 20px 16px 80px; }
+  .mobile-menu-btn { display: flex; }
+  .page-title { font-size: 28px; }
+  .stat-value { font-size: 24px; }
+  .balance-big { font-size: 34px; }
+  .tx-row { grid-template-columns: 1fr auto; gap: 8px; padding: 12px 14px; }
+  .tx-row.head { display: none; }
+  .tx-row .tx-date { grid-column: 1; font-size: 11px; }
+  .tx-row .tx-desc { grid-column: 1; order: 2; }
+  .tx-row .tx-cat { grid-column: 1; order: 3; }
+  .tx-row .tx-amount { grid-row: 1 / span 3; grid-column: 2; align-self: center; }
+  .tx-row .tx-del { display: none; }
+  .cat-head { grid-template-columns: auto 1fr auto auto; }
+  .cat-head .progress { display: none; }
+  .cat-body-inner { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .modal { padding: 22px; }
+}
+
+.mobile-only { display: none; }
+@media (max-width: 780px) {
+  .mobile-only { display: flex; }
+}
+
+/* Backdrop для мобильного меню */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 40;
+}
+.sidebar-backdrop.open { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app" style="display:none;">
+
+  <!-- ============================================
+       SIDEBAR — НАВИГАЦИЯ
+       ============================================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">Финансы</div>
+      <div class="sub">личный трекер</div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Разделы</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="overview">
+          <span class="left"><span class="dot" style="background: var(--accent)"></span><span class="label">Обзор</span></span>
+        </button>
+        <button class="nav-item" data-page="transactions">
+          <span class="left"><span class="dot" style="background: var(--text-tertiary)"></span><span class="label">Транзакции</span></span>
+          <span class="badge" id="txCount">0</span>
+        </button>
+        <button class="nav-item" data-page="categories">
+          <span class="left"><span class="dot" style="background: var(--text-tertiary)"></span><span class="label">Категории</span></span>
+        </button>
+        <button class="nav-item" data-page="settings">
+          <span class="left"><span class="dot" style="background: var(--text-tertiary)"></span><span class="label">Настройки</span></span>
+        </button>
+      </nav>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Категории</div>
+      <nav class="sidebar-nav" id="sidebarCats">
+        <!-- генерируется в JS -->
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sync-status local" id="syncStatus">
+        <span class="dot"></span>
+        <span id="syncText">Требуется вход</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ============================================
+       MAIN
+       ============================================ -->
+  <main class="main">
+
+    <!-- Топбар -->
+    <div class="topbar">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button class="mobile-menu-btn mobile-only" id="mobileMenuBtn" aria-label="Меню">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <h1 class="page-title" id="topTitle">Обзор</h1>
+          <div class="page-subtitle" id="topSubtitle">Сводка по месяцу</div>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <select class="select" id="monthSelector">
+          <!-- генерируется -->
+        </select>
+        <button class="btn ghost" id="importBtn">Импорт</button>
+        <button class="btn ghost" id="exportBtn">Экспорт</button>
+        <button class="btn primary" id="addBtn">+ Добавить</button>
+      </div>
+    </div>
+
+    <!-- ===============================
+         СТРАНИЦА: ОБЗОР
+         =============================== -->
+    <div class="page active" id="page-overview">
+
+      <!-- Статистика верхняя -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="accent-bar" style="background: var(--c-income)"></div>
+          <div class="stat-label">Доход</div>
+          <div class="stat-value" id="stIncome">0 Р</div>
+          <div class="stat-meta" id="stIncomeMeta">за месяц</div>
+        </div>
+        <div class="stat-card">
+          <div class="accent-bar" style="background: var(--c-credit)"></div>
+          <div class="stat-label">Расходы</div>
+          <div class="stat-value" id="stExpense">0 Р</div>
+          <div class="stat-meta" id="stExpenseMeta">за месяц</div>
+        </div>
+        <div class="stat-card">
+          <div class="accent-bar" style="background: var(--c-savings)"></div>
+          <div class="stat-label">Баланс</div>
+          <div class="stat-value" id="stBalance">0 Р</div>
+          <div class="stat-meta" id="stBalanceMeta">доход - расход</div>
+        </div>
+        <div class="stat-card">
+          <div class="accent-bar" style="background: var(--c-food)"></div>
+          <div class="stat-label">Средний день</div>
+          <div class="stat-value" id="stAvg">0 Р</div>
+          <div class="stat-meta" id="stAvgMeta">тратится в день</div>
+        </div>
+      </div>
+
+      <!-- Двухколоночный лейаут -->
+      <div class="overview-grid">
+
+        <!-- Левая колонка: график и категории -->
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title">Расходы по дням</div>
+              <div style="font-size: 12px; color: var(--text-tertiary);" id="chartMonthLbl"></div>
+            </div>
+            <div class="chart-wrap">
+              <div class="chart" id="chart">
+                <!-- генерируется в JS -->
+              </div>
+              <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+                <span id="chartStartLbl"></span>
+                <span id="chartEndLbl"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Категории — прогресс по лимитам</div>
+            </div>
+            <div class="cat-list" id="catList">
+              <!-- генерируется -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка: баланс и предупреждения -->
+        <div>
+          <div class="card aside-card">
+            <div class="card-header">
+              <div class="card-title">Текущий баланс</div>
+            </div>
+            <div class="balance-big" id="balanceBig">0 Р</div>
+            <div class="balance-meta">
+              <div><div class="l">Доход</div><div class="v positive" id="bIncome">+0 Р</div></div>
+              <div><div class="l">Расход</div><div class="v negative" id="bExpense">-0 Р</div></div>
+            </div>
+          </div>
+
+          <div class="card aside-card">
+            <div class="card-header">
+              <div class="card-title">Обязательные платежи</div>
+              <button class="btn ghost" id="addBillBtn" style="padding: 4px 10px; font-size: 12px;">+ Добавить</button>
+            </div>
+            <div class="bills-summary" id="billsSummary">
+              <div class="bills-summary-row">
+                <span class="l">Оплачено</span>
+                <span class="v" id="billsPaid">0 из 0</span>
+              </div>
+              <div class="bills-progress">
+                <div class="bills-progress-fill" id="billsProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="bills-summary-row" style="margin-top: 10px;">
+                <span class="l">Сумма на месяц</span>
+                <span class="v" id="billsTotal">0 Р</span>
+              </div>
+              <div class="bills-summary-row">
+                <span class="l">Осталось оплатить</span>
+                <span class="v" id="billsLeft">0 Р</span>
+              </div>
+            </div>
+            <div class="bills-list" id="billsList">
+              <div class="alert-empty">Список пуст. Добавь первый платеж</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===============================
+         СТРАНИЦА: ТРАНЗАКЦИИ
+         =============================== -->
+    <div class="page" id="page-transactions">
+
+      <div class="tabs" id="txTabs">
+        <button class="tab active" data-tab="all">Все</button>
+        <button class="tab" data-tab="expense">Расходы</button>
+        <button class="tab" data-tab="income">Доходы</button>
+      </div>
+
+      <div class="filters">
+        <div class="search-input-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="search" placeholder="Поиск по описанию...">
+        </div>
+        <select class="select" id="filterCat">
+          <option value="">Все категории</option>
+        </select>
+        <select class="select" id="sortBy">
+          <option value="date-desc">Сначала новые</option>
+          <option value="date-asc">Сначала старые</option>
+          <option value="amount-desc">По сумме (больше)</option>
+          <option value="amount-asc">По сумме (меньше)</option>
+        </select>
+      </div>
+
+      <div class="tx-table" id="txTable">
+        <!-- генерируется -->
+      </div>
+    </div>
+
+    <!-- ===============================
+         СТРАНИЦА: КАТЕГОРИИ
+         =============================== -->
+    <div class="page" id="page-categories">
+      <div class="card" style="margin-bottom: 20px; padding: 18px 22px;">
+        <div style="display:flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div>
+            <div style="font-size: 14px; color: var(--text-primary); font-weight: 500;">Настройка лимитов</div>
+            <div style="font-size: 13px; color: var(--text-tertiary); margin-top: 2px;">Нажми на категорию, чтобы изменить месячный лимит и посмотреть транзакции</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cat-accordion" id="catAccordion">
+        <!-- генерируется -->
+      </div>
+    </div>
+
+    <!-- ===============================
+         СТРАНИЦА: НАСТРОЙКИ
+         =============================== -->
+    <div class="page" id="page-settings">
+      <div class="settings-grid">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Синхронизация — Firebase</div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
+            Данные сохраняются в Firebase Cloud Firestore и подтягиваются на других устройствах после входа через твой Google-аккаунт. localStorage оставлен только как локальная копия.
+          </p>
+
+          <div class="note-box" style="margin-bottom: 16px;">
+            <strong>Как работает:</strong><br>
+            1. При открытии страницы появляется вход через Google<br>
+            2. После входа данные загружаются из Firebase<br>
+            3. При изменениях данные автоматически сохраняются в Firestore<br>
+            4. Доступ закрыт правилами Firestore только на твою почту
+          </div>
+
+          <div class="kv"><span class="l">Firebase project</span><span class="v" id="cfgUrl">не задан</span></div>
+          <div class="kv"><span class="l">Доступ</span><span class="v" id="cfgKey">не задан</span></div>
+          <div class="kv"><span class="l">Статус</span><span class="v" id="cfgStatus">ожидает вход</span></div>
+
+          <label class="checkbox-row" style="margin-top: 12px;">
+            <input type="checkbox" id="autoSyncCb">
+            <span class="cb"></span>
+            <span>Автоматически сохранять изменения в Firebase</span>
+          </label>
+
+          <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+            <button class="btn" id="pushBtn">Отправить в облако</button>
+            <button class="btn" id="pullBtn">Загрузить из облака</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Данные</div>
+          </div>
+          <div class="kv"><span class="l">Всего транзакций</span><span class="v" id="dataTxCount">0</span></div>
+          <div class="kv"><span class="l">Размер данных</span><span class="v" id="dataSize">0 КБ</span></div>
+          <div class="kv"><span class="l">Последнее изменение</span><span class="v" id="dataUpdated">никогда</span></div>
+
+          <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+            <button class="btn" id="exportBtn2">Экспорт в JSON</button>
+            <button class="btn" id="importBtn2">Импорт из JSON</button>
+            <button class="btn" id="clearBtn" style="margin-left: auto; color: var(--danger);">Удалить все данные</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============================================
+     МОДАЛКА: ДОБАВИТЬ ТРАНЗАКЦИЮ
+     ============================================ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <h3>Новая запись</h3>
+    <div class="sub">Добавь доход или расход</div>
+
+    <div class="type-toggle" id="typeToggle">
+      <button class="active" data-type="expense">Расход</button>
+      <button data-type="income">Доход</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="field full">
+        <label>Описание</label>
+        <input type="text" id="fDesc" placeholder="Например: ужин в кафе">
+      </div>
+
+      <div class="field">
+        <label>Сумма, Р</label>
+        <input type="number" id="fAmount" step="0.01" min="0" placeholder="0">
+      </div>
+
+      <div class="field">
+        <label>Категория</label>
+        <select id="fCat"></select>
+      </div>
+
+      <div class="field full">
+        <label>Дата</label>
+        <input type="date" id="fDate">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="modalCancel">Отмена</button>
+      <button class="btn primary" id="modalSave">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     МОДАЛКА: ДОБАВИТЬ / РЕДАКТИРОВАТЬ ПЛАТЕЖ
+     ============================================ -->
+<div class="modal-backdrop" id="billModalBackdrop">
+  <div class="modal">
+    <h3 id="billModalTitle">Новый платеж</h3>
+    <div class="sub">Обязательная регулярная или разовая трата</div>
+
+    <div class="form-grid">
+      <div class="field full">
+        <label>Название</label>
+        <input type="text" id="bName" placeholder="Например: аренда квартиры">
+      </div>
+
+      <div class="field">
+        <label>Сумма, Р</label>
+        <input type="number" id="bAmount" step="0.01" min="0" placeholder="0">
+      </div>
+
+      <div class="field">
+        <label>Дата списания</label>
+        <input type="number" id="bDay" min="1" max="31" placeholder="1-31">
+      </div>
+
+      <div class="field full">
+        <label>Регулярность</label>
+        <div class="type-toggle" id="bRecurToggle" style="margin: 0;">
+          <button class="active" data-recur="monthly" type="button">Каждый месяц</button>
+          <button data-recur="once" type="button">Разово</button>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Примечание</label>
+        <textarea id="bNote" rows="2" placeholder="Необязательно" style="resize: vertical; min-height: 60px;"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="billModalCancel">Отмена</button>
+      <button class="btn primary" id="billModalSave">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Скрытый input для импорта -->
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+/* ============================================================
+   КОНФИГ FIREBASE
+   ------------------------------------------------------------
+   Данные сохраняются в Cloud Firestore.
+   Доступ к базе закрывается правилами Firestore:
+   только Google-аккаунт, указанный в FIREBASE_ALLOWED_EMAIL.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAqkeTAsHiO5gcvQSogeXsc7PP7_BQtqEk",
+  authDomain: "trenirovki-70f2a.firebaseapp.com",
+  projectId: "trenirovki-70f2a",
+  storageBucket: "trenirovki-70f2a.firebasestorage.app",
+  messagingSenderId: "197905713652",
+  appId: "1:197905713652:web:a21dbaa1b9d023b10311a1",
+  measurementId: "G-4TSDSDL98F"
+};
+
+const FIREBASE_ALLOWED_EMAIL = "olesyakuruanovva@gmail.com";
+const FIREBASE_TRACKER_ID = "finance";
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firebaseAuth = getAuth(firebaseApp);
+const firebaseDb = getFirestore(firebaseApp);
+const firebaseProvider = new GoogleAuthProvider();
+
+let currentUser = null;
+let firebaseSaveTimer = null;
+let firebaseBootstrapped = false;
+
+/* ============================================================
+   ДЕМО-ДАННЫЕ
+   ------------------------------------------------------------
+   Замени любые поля. Категории описаны ниже в CATEGORIES.
+   ============================================================ */
+const DEMO_DATA = {
+  transactions: [
+    { id: 't1', type: 'income',  category: 'income',     amount: 120000, desc: 'Зарплата',                date: todayMinus(15) },
+    { id: 't2', type: 'income',  category: 'income',     amount: 18000,  desc: 'Фриланс-проект',          date: todayMinus(10) },
+    { id: 't3', type: 'expense', category: 'mandatory',  amount: 32000,  desc: 'Аренда квартиры',         date: todayMinus(20) },
+    { id: 't4', type: 'expense', category: 'mandatory',  amount: 4200,   desc: 'Интернет и коммуналка',   date: todayMinus(18) },
+    { id: 't5', type: 'expense', category: 'credit',     amount: 18500,  desc: 'Платеж по кредиту',       date: todayMinus(14) },
+    { id: 't6', type: 'expense', category: 'food',       amount: 2400,   desc: 'Продукты на неделю',      date: todayMinus(12) },
+    { id: 't7', type: 'expense', category: 'food',       amount: 1850,   desc: 'Ужин в кафе',             date: todayMinus(8) },
+    { id: 't8', type: 'expense', category: 'food',       amount: 3100,   desc: 'Продукты',                date: todayMinus(5) },
+    { id: 't9', type: 'expense', category: 'cat',        amount: 2800,   desc: 'Корм и наполнитель',      date: todayMinus(13) },
+    { id: 't10',type: 'expense', category: 'cat',        amount: 1500,   desc: 'Ветеринар',               date: todayMinus(6) },
+    { id: 't11',type: 'expense', category: 'health',     amount: 4500,   desc: 'Анализы',                 date: todayMinus(11) },
+    { id: 't12',type: 'expense', category: 'shopping',   amount: 6200,   desc: 'Свитер',                  date: todayMinus(7) },
+    { id: 't13',type: 'expense', category: 'shopping',   amount: 3400,   desc: 'Книги',                   date: todayMinus(4) },
+    { id: 't14',type: 'expense', category: 'savings',    amount: 20000,  desc: 'Перевод на накопления',   date: todayMinus(9) },
+    { id: 't15',type: 'expense', category: 'food',       amount: 1280,   desc: 'Кофе и завтрак',          date: todayMinus(2) },
+    { id: 't16',type: 'expense', category: 'health',     amount: 980,    desc: 'Аптека',                  date: todayMinus(1) }
+  ],
+  /* месячные лимиты по категориям расходов (Р) */
+  limits: {
+    mandatory: 40000,
+    credit:    20000,
+    food:      15000,
+    cat:       5000,
+    health:    8000,
+    shopping:  10000,
+    savings:   25000
+  },
+  /* ============================================================
+     ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ
+     ------------------------------------------------------------
+     name      — название
+     amount    — сумма в рублях
+     day       — день месяца (1-31)
+     recur     — 'monthly' (каждый месяц) или 'once' (разово)
+     note      — примечание (необязательно)
+     paid      — объект { 'YYYY-MM': true } для отметок оплаты по месяцам
+                 (для 'once' хранится дата как 'YYYY-MM-DD': true)
+     onceDate  — для разовых: 'YYYY-MM-DD', чтобы платеж показывался только в нужном месяце
+     ============================================================ */
+  bills: [
+    { id: 'b1', name: 'Аренда квартиры',    amount: 32000, day: 5,  recur: 'monthly', note: 'Перевод хозяину', paid: {} },
+    { id: 'b2', name: 'Интернет',           amount: 700,   day: 10, recur: 'monthly', note: '', paid: {} },
+    { id: 'b3', name: 'Коммунальные',       amount: 4200,  day: 15, recur: 'monthly', note: 'Газ, вода, свет', paid: {} },
+    { id: 'b4', name: 'Платеж по кредиту',  amount: 18500, day: 20, recur: 'monthly', note: '', paid: {} },
+    { id: 'b5', name: 'Подписки',           amount: 1290,  day: 1,  recur: 'monthly', note: 'Музыка, кино', paid: {} }
+  ],
+  updatedAt: Date.now()
+};
+
+/* ============================================================
+   КАТЕГОРИИ — здесь редактируй цвета, иконки и порядок
+   ============================================================ */
+const CATEGORIES = [
+  { id: 'income',    name: 'Доход',                color: 'var(--c-income)',    type: 'income'  },
+  { id: 'mandatory', name: 'Обязательные расходы', color: 'var(--c-mandatory)', type: 'expense' },
+  { id: 'credit',    name: 'Кредиты',              color: 'var(--c-credit)',    type: 'expense' },
+  { id: 'food',      name: 'Еда',                  color: 'var(--c-food)',      type: 'expense' },
+  { id: 'cat',       name: 'Кот',                  color: 'var(--c-cat)',       type: 'expense' },
+  { id: 'health',    name: 'Здоровье',             color: 'var(--c-health)',    type: 'expense' },
+  { id: 'shopping',  name: 'Покупки',              color: 'var(--c-shopping)',  type: 'expense' },
+  { id: 'savings',   name: 'Накопления',           color: 'var(--c-savings)',   type: 'expense' }
+];
+
+const STORAGE_KEY = 'finance-tracker-v1';
+const SETTINGS_KEY = 'finance-tracker-settings-v1';
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function todayMinus(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function fmtMoney(n) {
+  const abs = Math.abs(n);
+  const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(abs);
+  return (n < 0 ? '-' : '') + formatted + ' Р';
+}
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+}
+function fmtDateLong(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function getCat(id) { return CATEGORIES.find(c => c.id === id) || CATEGORIES[0]; }
+function uid() { return 't_' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+function monthKey(iso) { return iso.slice(0, 7); } // YYYY-MM
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+let state = loadLocal() || JSON.parse(JSON.stringify(DEMO_DATA));
+// миграция: добавляем bills и limits в старые сохраненные данные
+if (!state.bills) state.bills = [];
+if (!state.limits) state.limits = {};
+
+let settings = loadSettings() || { autoSync: true };
+if (settings.autoSync === undefined) settings.autoSync = true;
+let currentPage = 'overview';
+let currentMonth = monthKey(todayStr());
+let currentTxFilter = { tab: 'all', search: '', cat: '', sort: 'date-desc' };
+let editingType = 'expense';
+
+// редактирование платежа: null или id
+let editingBillId = null;
+let editingBillRecur = 'monthly';
+
+/* ============================================================
+   ХРАНИЛИЩЕ — FIREBASE + ЛОКАЛЬНАЯ КОПИЯ
+   ------------------------------------------------------------
+   Firestore является основным хранилищем.
+   localStorage используется только как локальная копия, чтобы не терять
+   данные при нестабильном интернете и проще перенести старые записи.
+   ============================================================ */
+function saveLocal() {
+  state.updatedAt = Date.now();
+
+  // Локальная копия. Основное сохранение идет в Firestore ниже.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Не удалось сохранить локальную копию', e);
+  }
+
+  if (settings.autoSync !== false && currentUser) {
+    scheduleFirebaseSave();
+  }
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function getFinanceDocRef() {
+  if (!currentUser) throw new Error('Пользователь не авторизован');
+  return doc(firebaseDb, 'users', currentUser.uid, 'trackers', FIREBASE_TRACKER_ID);
+}
+
+function isFirebaseConfigured() {
+  return !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+}
+
+function scheduleFirebaseSave() {
+  clearTimeout(firebaseSaveTimer);
+  firebaseSaveTimer = setTimeout(() => {
+    syncToFirebase();
+  }, 450);
+}
+
+async function syncToFirebase() {
+  if (!currentUser) return { ok: false, error: 'Сначала войди через Google' };
+  setSyncStatus('cloud', 'Сохраняем в Firebase...');
+  try {
+    await setDoc(getFinanceDocRef(), {
+      data: state,
+      tracker: FIREBASE_TRACKER_ID,
+      ownerEmail: currentUser.email,
+      updatedAt: state.updatedAt,
+      updatedAtServer: serverTimestamp()
+    }, { merge: true });
+
+    setSyncStatus('cloud', 'Синхронизировано с Firebase');
+    return { ok: true };
+  } catch (e) {
+    console.error('Ошибка сохранения в Firebase', e);
+    setSyncStatus('error', 'Ошибка Firebase');
+    return { ok: false, error: e.message };
+  }
+}
+
+async function loadFromFirebase() {
+  if (!currentUser) return { ok: false, error: 'Сначала войди через Google' };
+  setSyncStatus('cloud', 'Загружаем из Firebase...');
+  try {
+    const snap = await getDoc(getFinanceDocRef());
+
+    if (snap.exists() && snap.data() && snap.data().data) {
+      state = snap.data().data;
+      if (!state.bills) state.bills = [];
+      if (!state.limits) state.limits = {};
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      setSyncStatus('cloud', 'Загружено из Firebase');
+      return { ok: true };
+    }
+
+    // Если в Firebase еще пусто, переносим текущие локальные/демо-данные в облако.
+    await syncToFirebase();
+    renderAll();
+    setSyncStatus('cloud', 'Создано в Firebase');
+    return { ok: true };
+  } catch (e) {
+    console.error('Ошибка загрузки из Firebase', e);
+    setSyncStatus('error', 'Ошибка загрузки Firebase');
+    return { ok: false, error: e.message };
+  }
+}
+
+function setSyncStatus(kind, text) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.classList.remove('local', 'cloud', 'error');
+  el.classList.add(kind);
+  document.getElementById('syncText').textContent = text;
+}
+
+/* ============================================================
+   ВЫЧИСЛЕНИЯ
+   ============================================================ */
+function txOfMonth(month) {
+  return state.transactions.filter(t => monthKey(t.date) === month);
+}
+
+function totals(month) {
+  const txs = txOfMonth(month);
+  const income  = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  return { income, expense, balance: income - expense };
+}
+
+function catTotals(month) {
+  const txs = txOfMonth(month).filter(t => t.type === 'expense');
+  const map = {};
+  CATEGORIES.filter(c => c.type === 'expense').forEach(c => map[c.id] = 0);
+  txs.forEach(t => { map[t.category] = (map[t.category] || 0) + t.amount; });
+  return map;
+}
+
+function dailyExpense(month) {
+  const [yy, mm] = month.split('-').map(Number);
+  const days = new Date(yy, mm, 0).getDate();
+  const arr = new Array(days).fill(0);
+  txOfMonth(month).filter(t => t.type === 'expense').forEach(t => {
+    const d = parseInt(t.date.slice(8, 10), 10);
+    arr[d - 1] += t.amount;
+  });
+  return arr;
+}
+
+/* ============================================================
+   РЕНДЕР — НАВИГАЦИЯ И БОКОВЫЕ КАТЕГОРИИ
+   ============================================================ */
+function renderSidebarCats() {
+  const wrap = document.getElementById('sidebarCats');
+  const totals = catTotals(currentMonth);
+  wrap.innerHTML = CATEGORIES.map(c => {
+    const sum = c.type === 'income'
+      ? txOfMonth(currentMonth).filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0)
+      : (totals[c.id] || 0);
+    return `
+      <button class="nav-item" data-cat="${c.id}">
+        <span class="left">
+          <span class="dot" style="background:${c.color}"></span>
+          <span class="label">${c.name}</span>
+        </span>
+        <span class="badge">${fmtMoney(sum).replace(' Р','')}</span>
+      </button>
+    `;
+  }).join('');
+
+  // клик переводит на страницу транзакций с фильтром
+  wrap.querySelectorAll('[data-cat]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      currentTxFilter.cat = cat;
+      currentTxFilter.tab = 'all';
+      document.getElementById('filterCat').value = cat;
+      switchPage('transactions');
+    });
+  });
+}
+
+/* ============================================================
+   РЕНДЕР — ВЫБОР МЕСЯЦА
+   ============================================================ */
+function renderMonthSelector() {
+  const sel = document.getElementById('monthSelector');
+  // собираем все месяцы из транзакций + текущий
+  const set = new Set([currentMonth, monthKey(todayStr())]);
+  state.transactions.forEach(t => set.add(monthKey(t.date)));
+  const months = Array.from(set).sort().reverse();
+
+  sel.innerHTML = months.map(m => {
+    const [y, mm] = m.split('-');
+    const names = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const label = `${names[parseInt(mm)-1]} ${y}`;
+    return `<option value="${m}" ${m === currentMonth ? 'selected':''}>${label.charAt(0).toUpperCase() + label.slice(1)}</option>`;
+  }).join('');
+}
+
+/* ============================================================
+   РЕНДЕР — ОБЗОР: статистика, график, прогрессы
+   ============================================================ */
+function renderOverview() {
+  const t = totals(currentMonth);
+  document.getElementById('stIncome').textContent = fmtMoney(t.income);
+  document.getElementById('stExpense').textContent = fmtMoney(t.expense);
+  document.getElementById('stBalance').textContent = fmtMoney(t.balance);
+
+  // средний день
+  const [yy, mm] = currentMonth.split('-').map(Number);
+  const isCurMonth = currentMonth === monthKey(todayStr());
+  const today = new Date();
+  const daysPassed = isCurMonth ? today.getDate() : new Date(yy, mm, 0).getDate();
+  const avg = daysPassed > 0 ? Math.round(t.expense / daysPassed) : 0;
+  document.getElementById('stAvg').textContent = fmtMoney(avg);
+  document.getElementById('stAvgMeta').textContent = isCurMonth
+    ? `за ${daysPassed} дн. месяца`
+    : `за ${daysPassed} дн.`;
+
+  // sidebar balance
+  document.getElementById('balanceBig').textContent = fmtMoney(t.balance);
+  document.getElementById('bIncome').textContent = '+' + fmtMoney(t.income);
+  document.getElementById('bExpense').textContent = '-' + fmtMoney(t.expense);
+
+  renderChart();
+  renderCatProgress();
+  renderBills();
+}
+
+function renderChart() {
+  const data = dailyExpense(currentMonth);
+  const max = Math.max(...data, 1);
+  const chart = document.getElementById('chart');
+  chart.innerHTML = data.map((v, i) => {
+    const h = (v / max) * 100;
+    const day = String(i + 1).padStart(2, '0');
+    return `
+      <div class="chart-bar-col" title="${day}: ${fmtMoney(v)}">
+        <div class="chart-bar" style="height: ${h}%; ${v > 0 ? 'background: var(--text-secondary)' : ''}">
+          <span class="tip">${day} — ${fmtMoney(v)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const [yy, mm] = currentMonth.split('-').map(Number);
+  const lastDay = new Date(yy, mm, 0).getDate();
+  document.getElementById('chartStartLbl').textContent = `01.${String(mm).padStart(2,'0')}`;
+  document.getElementById('chartEndLbl').textContent = `${lastDay}.${String(mm).padStart(2,'0')}`;
+  const names = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  document.getElementById('chartMonthLbl').textContent = `${names[mm-1]} ${yy}`;
+}
+
+function renderCatProgress() {
+  const totals = catTotals(currentMonth);
+  const wrap = document.getElementById('catList');
+  const expCats = CATEGORIES.filter(c => c.type === 'expense');
+
+  wrap.innerHTML = expCats.map(c => {
+    const spent = totals[c.id] || 0;
+    const limit = state.limits[c.id] || 0;
+    const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+    const overPct = limit > 0 ? (spent / limit) * 100 : 0;
+
+    let amountClass = '';
+    if (limit > 0) {
+      if (overPct >= 100) amountClass = 'over';
+      else if (overPct >= 80) amountClass = 'warn';
+    }
+
+    const barColor = overPct >= 100 ? 'var(--danger)' : (overPct >= 80 ? 'var(--warning)' : c.color);
+
+    return `
+      <div class="cat-row">
+        <div class="cat-row-top">
+          <div class="cat-row-name">
+            <span class="dot" style="background:${c.color}"></span>
+            ${c.name}
+          </div>
+          <div class="cat-row-amount">
+            <span class="${amountClass}">${fmtMoney(spent)}</span>
+            <span class="limit"> / ${limit > 0 ? fmtMoney(limit) : 'без лимита'}</span>
+          </div>
+        </div>
+        <div class="progress">
+          <div class="progress-fill" style="width:${pct}%; background:${barColor};"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============================================================
+   ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ — ВЫЧИСЛЕНИЯ И РЕНДЕР
+   ============================================================ */
+
+// Возвращает массив платежей, актуальных для месяца
+function billsForMonth(month) {
+  return state.bills.filter(b => {
+    if (b.recur === 'monthly') return true;
+    // разовый — показываем только в его месяце
+    if (b.recur === 'once' && b.onceDate) {
+      return monthKey(b.onceDate) === month;
+    }
+    return false;
+  });
+}
+
+// Оплачен ли платеж в указанном месяце
+function isBillPaid(bill, month) {
+  return !!(bill.paid && bill.paid[month]);
+}
+
+// Сводка: оплачено, не оплачено, суммы
+function billsStats(month) {
+  const bills = billsForMonth(month);
+  let total = 0, paid = 0, paidCount = 0;
+  bills.forEach(b => {
+    total += b.amount;
+    if (isBillPaid(b, month)) {
+      paid += b.amount;
+      paidCount += 1;
+    }
+  });
+  return {
+    items: bills,
+    count: bills.length,
+    paidCount,
+    total,
+    paid,
+    left: total - paid
+  };
+}
+
+// Срочность: сколько дней до даты списания (в рамках выбранного месяца)
+function billDueInfo(bill, month) {
+  const [yy, mm] = month.split('-').map(Number);
+  const lastDay = new Date(yy, mm, 0).getDate();
+  const day = Math.min(bill.day || 1, lastDay);
+  const dueDate = new Date(yy, mm - 1, day);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const isCurMonth = month === monthKey(todayStr());
+
+  if (!isCurMonth) {
+    // не текущий месяц — просто показываем число
+    return { label: `${String(day).padStart(2,'0')}.${String(mm).padStart(2,'0')}`, status: 'neutral' };
+  }
+
+  const diff = Math.round((dueDate - today) / 86400000);
+  if (diff < 0)  return { label: `просрочено (${Math.abs(diff)} дн.)`, status: 'overdue' };
+  if (diff === 0) return { label: 'сегодня', status: 'due-soon' };
+  if (diff <= 3)  return { label: `через ${diff} дн.`, status: 'due-soon' };
+  return { label: `${String(day).padStart(2,'0')} числа`, status: 'neutral' };
+}
+
+function renderBills() {
+  const stats = billsStats(currentMonth);
+
+  // верхняя сводка
+  document.getElementById('billsPaid').textContent = `${stats.paidCount} из ${stats.count}`;
+  document.getElementById('billsTotal').textContent = fmtMoney(stats.total);
+  document.getElementById('billsLeft').textContent = fmtMoney(stats.left);
+  const pct = stats.total > 0 ? (stats.paid / stats.total) * 100 : 0;
+  document.getElementById('billsProgressFill').style.width = pct + '%';
+
+  // список
+  const wrap = document.getElementById('billsList');
+  if (!stats.items.length) {
+    wrap.innerHTML = '<div class="alert-empty">Список пуст. Добавь первый платеж</div>';
+    return;
+  }
+
+  // сортировка: сначала неоплаченные, по дате списания
+  const sorted = [...stats.items].sort((a, b) => {
+    const pa = isBillPaid(a, currentMonth) ? 1 : 0;
+    const pb = isBillPaid(b, currentMonth) ? 1 : 0;
+    if (pa !== pb) return pa - pb;
+    return (a.day || 0) - (b.day || 0);
+  });
+
+  wrap.innerHTML = sorted.map(b => {
+    const paid = isBillPaid(b, currentMonth);
+    const due = billDueInfo(b, currentMonth);
+    const isOverdue = !paid && due.status === 'overdue';
+    const recurLabel = b.recur === 'monthly' ? 'Ежемесячно' : 'Разово';
+    const recurClass = b.recur === 'monthly' ? 'regular' : 'once';
+
+    return `
+      <div class="bill-item ${paid ? 'paid' : ''} ${isOverdue ? 'overdue' : ''}" data-bill="${b.id}">
+        <div class="bill-check" data-toggle="${b.id}" title="${paid ? 'Снять отметку' : 'Отметить оплаченным'}"></div>
+        <div class="bill-body">
+          <div class="bill-top">
+            <div class="bill-name">${escapeHTML(b.name)}</div>
+            <div class="bill-amount">${fmtMoney(b.amount)}</div>
+          </div>
+          <div class="bill-meta">
+            <span class="${due.status === 'overdue' ? 'overdue' : (due.status === 'due-soon' ? 'due-soon' : '')}">${due.label}</span>
+            <span class="sep">·</span>
+            <span class="bill-tag ${recurClass}">${recurLabel}</span>
+          </div>
+          ${b.note ? `<div class="bill-note">${escapeHTML(b.note)}</div>` : ''}
+        </div>
+        <div class="bill-actions">
+          <button class="bill-act-btn" data-edit="${b.id}" aria-label="Редактировать">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          </button>
+          <button class="bill-act-btn del" data-del="${b.id}" aria-label="Удалить">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // привязка кликов
+  wrap.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      togglePaid(el.dataset.toggle);
+    });
+  });
+  wrap.querySelectorAll('[data-edit]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      openBillModal(el.dataset.edit);
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteBill(el.dataset.del);
+    });
+  });
+}
+
+function togglePaid(id) {
+  const bill = state.bills.find(b => b.id === id);
+  if (!bill) return;
+  if (!bill.paid) bill.paid = {};
+  if (bill.paid[currentMonth]) {
+    delete bill.paid[currentMonth];
+  } else {
+    bill.paid[currentMonth] = true;
+  }
+  saveLocal();
+  renderBills();
+}
+
+function deleteBill(id) {
+  const bill = state.bills.find(b => b.id === id);
+  if (!bill) return;
+  if (!confirm(`Удалить платеж «${bill.name}»? Все отметки оплаты будут потеряны.`)) return;
+  state.bills = state.bills.filter(b => b.id !== id);
+  saveLocal();
+  renderBills();
+}
+
+function openBillModal(id) {
+  editingBillId = id || null;
+  const modal = document.getElementById('billModalBackdrop');
+  const title = document.getElementById('billModalTitle');
+
+  if (id) {
+    const b = state.bills.find(x => x.id === id);
+    if (!b) return;
+    title.textContent = 'Редактировать платеж';
+    document.getElementById('bName').value = b.name || '';
+    document.getElementById('bAmount').value = b.amount || '';
+    document.getElementById('bDay').value = b.day || '';
+    document.getElementById('bNote').value = b.note || '';
+    editingBillRecur = b.recur || 'monthly';
+  } else {
+    title.textContent = 'Новый платеж';
+    document.getElementById('bName').value = '';
+    document.getElementById('bAmount').value = '';
+    document.getElementById('bDay').value = '';
+    document.getElementById('bNote').value = '';
+    editingBillRecur = 'monthly';
+  }
+
+  // переключатель регулярности
+  document.querySelectorAll('#bRecurToggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.recur === editingBillRecur);
+  });
+
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('bName').focus(), 50);
+}
+
+function closeBillModal() {
+  document.getElementById('billModalBackdrop').classList.remove('open');
+  editingBillId = null;
+}
+
+function saveBill() {
+  const name = document.getElementById('bName').value.trim();
+  const amount = parseFloat(document.getElementById('bAmount').value);
+  const day = parseInt(document.getElementById('bDay').value, 10);
+  const note = document.getElementById('bNote').value.trim();
+
+  if (!name) { alert('Введи название платежа'); return; }
+  if (!amount || amount <= 0) { alert('Введи корректную сумму'); return; }
+  if (!day || day < 1 || day > 31) { alert('Введи день списания от 1 до 31'); return; }
+
+  if (editingBillId) {
+    const b = state.bills.find(x => x.id === editingBillId);
+    if (b) {
+      b.name = name;
+      b.amount = amount;
+      b.day = day;
+      b.note = note;
+      // если меняем регулярность с monthly на once — фиксируем дату для текущего месяца
+      if (b.recur !== editingBillRecur) {
+        b.recur = editingBillRecur;
+        if (editingBillRecur === 'once') {
+          const [yy, mm] = currentMonth.split('-').map(Number);
+          const lastDay = new Date(yy, mm, 0).getDate();
+          b.onceDate = `${currentMonth}-${String(Math.min(day, lastDay)).padStart(2,'0')}`;
+        } else {
+          delete b.onceDate;
+        }
+      }
+    }
+  } else {
+    const newBill = {
+      id: 'b_' + Math.random().toString(36).slice(2, 9),
+      name, amount, day, note,
+      recur: editingBillRecur,
+      paid: {}
+    };
+    if (editingBillRecur === 'once') {
+      const [yy, mm] = currentMonth.split('-').map(Number);
+      const lastDay = new Date(yy, mm, 0).getDate();
+      newBill.onceDate = `${currentMonth}-${String(Math.min(day, lastDay)).padStart(2,'0')}`;
+    }
+    state.bills.push(newBill);
+  }
+
+  saveLocal();
+  renderBills();
+  closeBillModal();
+}
+
+/* ============================================================
+   РЕНДЕР — ТРАНЗАКЦИИ
+   ============================================================ */
+function renderTxFilters() {
+  const sel = document.getElementById('filterCat');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Все категории</option>' +
+    CATEGORIES.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  sel.value = current || currentTxFilter.cat || '';
+}
+
+function renderTransactions() {
+  const table = document.getElementById('txTable');
+  const f = currentTxFilter;
+  let txs = txOfMonth(currentMonth);
+
+  if (f.tab === 'expense') txs = txs.filter(t => t.type === 'expense');
+  if (f.tab === 'income')  txs = txs.filter(t => t.type === 'income');
+
+  if (f.search) {
+    const q = f.search.toLowerCase();
+    txs = txs.filter(t => (t.desc || '').toLowerCase().includes(q));
+  }
+  if (f.cat) txs = txs.filter(t => t.category === f.cat);
+
+  switch (f.sort) {
+    case 'date-asc':    txs.sort((a,b) => a.date.localeCompare(b.date)); break;
+    case 'amount-desc': txs.sort((a,b) => b.amount - a.amount); break;
+    case 'amount-asc':  txs.sort((a,b) => a.amount - b.amount); break;
+    default:            txs.sort((a,b) => b.date.localeCompare(a.date));
+  }
+
+  document.getElementById('txCount').textContent = state.transactions.length;
+
+  if (!txs.length) {
+    table.innerHTML = `
+      <div class="empty-state">
+        <div class="title">Нет транзакций</div>
+        <div>Добавь первую через кнопку «+ Добавить»</div>
+      </div>
+    `;
+    return;
+  }
+
+  const headRow = `
+    <div class="tx-row head">
+      <div>Дата</div>
+      <div>Описание</div>
+      <div>Категория</div>
+      <div style="text-align:right;">Сумма</div>
+      <div></div>
+    </div>
+  `;
+
+  const rows = txs.map(t => {
+    const c = getCat(t.category);
+    const sign = t.type === 'income' ? '+' : '-';
+    const amtCls = t.type === 'income' ? 'income' : 'expense';
+    return `
+      <div class="tx-row body" data-id="${t.id}">
+        <div class="tx-date">${fmtDate(t.date)}</div>
+        <div class="tx-desc">
+          <span>${escapeHTML(t.desc) || '—'}</span>
+        </div>
+        <div>
+          <span class="tx-cat">
+            <span class="dot" style="background:${c.color}"></span>
+            ${c.name}
+          </span>
+        </div>
+        <div class="tx-amount ${amtCls}">${sign}${fmtMoney(t.amount).replace('-', '')}</div>
+        <button class="tx-del" data-del="${t.id}" aria-label="Удалить">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  table.innerHTML = headRow + rows;
+
+  table.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = b.dataset.del;
+      if (confirm('Удалить эту запись?')) {
+        state.transactions = state.transactions.filter(t => t.id !== id);
+        saveLocal();
+        renderAll();
+      }
+    });
+  });
+}
+
+/* ============================================================
+   РЕНДЕР — КАТЕГОРИИ (аккордеон с лимитами)
+   ============================================================ */
+function renderCatAccordion() {
+  const wrap = document.getElementById('catAccordion');
+  const totals = catTotals(currentMonth);
+
+  wrap.innerHTML = CATEGORIES.map(c => {
+    const isExpense = c.type === 'expense';
+    const spent = isExpense
+      ? (totals[c.id] || 0)
+      : txOfMonth(currentMonth).filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const limit = state.limits[c.id] || 0;
+    const pct = isExpense && limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+    const overPct = isExpense && limit > 0 ? (spent / limit) * 100 : 0;
+    const barColor = overPct >= 100 ? 'var(--danger)' : (overPct >= 80 ? 'var(--warning)' : c.color);
+
+    const catTxs = state.transactions
+      .filter(t => t.category === c.id && monthKey(t.date) === currentMonth)
+      .sort((a,b) => b.date.localeCompare(a.date));
+
+    return `
+      <div class="cat-block" data-cat="${c.id}">
+        <div class="cat-head">
+          <span class="dot" style="background:${c.color}"></span>
+          <span class="name">${c.name}</span>
+          <span class="sum">${fmtMoney(spent)}${isExpense && limit > 0 ? ' / ' + fmtMoney(limit) : ''}</span>
+          ${isExpense ? `<div class="progress" style="width:120px;"><div class="progress-fill" style="width:${pct}%; background:${barColor};"></div></div>` : '<div></div>'}
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="cat-body">
+          <div class="cat-body-inner">
+            ${isExpense ? `
+              <div class="field">
+                <label>Месячный лимит, Р</label>
+                <input type="number" min="0" step="100" data-limit="${c.id}" value="${limit || ''}" placeholder="без лимита">
+              </div>
+              <div class="field">
+                <label>Потрачено в этом месяце</label>
+                <input type="text" value="${fmtMoney(spent)}" disabled>
+              </div>
+            ` : `
+              <div class="field full">
+                <label>Получено в этом месяце</label>
+                <input type="text" value="${fmtMoney(spent)}" disabled>
+              </div>
+            `}
+
+            <div class="cat-tx-list">
+              <div class="cat-tx-list-title">Транзакции (${catTxs.length})</div>
+              ${catTxs.length === 0
+                ? '<div style="font-size:13px; color: var(--text-muted); padding: 8px 0;">Пока нет записей</div>'
+                : catTxs.map(t => `
+                    <div class="cat-tx-item">
+                      <div class="l">${escapeHTML(t.desc) || '—'} <span style="color: var(--text-muted); font-size: 12px;">· ${fmtDateLong(t.date)}</span></div>
+                      <div class="v">${t.type === 'income' ? '+' : '-'}${fmtMoney(t.amount).replace('-', '')}</div>
+                    </div>
+                  `).join('')
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // раскрытие
+  wrap.querySelectorAll('.cat-head').forEach(h => {
+    h.addEventListener('click', () => {
+      h.parentElement.classList.toggle('open');
+    });
+  });
+
+  // лимиты
+  wrap.querySelectorAll('[data-limit]').forEach(inp => {
+    inp.addEventListener('click', e => e.stopPropagation());
+    inp.addEventListener('change', e => {
+      const cid = inp.dataset.limit;
+      const val = parseFloat(inp.value) || 0;
+      state.limits[cid] = val;
+      saveLocal();
+      renderOverview();
+      renderCatAccordion();
+    });
+  });
+}
+
+/* ============================================================
+   РЕНДЕР — НАСТРОЙКИ
+   ============================================================ */
+function renderSettings() {
+  document.getElementById('cfgUrl').textContent = firebaseConfig.projectId || 'не задан';
+  document.getElementById('cfgKey').textContent = FIREBASE_ALLOWED_EMAIL;
+  document.getElementById('cfgStatus').textContent = currentUser
+    ? 'подключено к Firebase'
+    : 'ожидает вход через Google';
+
+  document.getElementById('dataTxCount').textContent = state.transactions.length;
+  const bytes = new Blob([JSON.stringify(state)]).size;
+  document.getElementById('dataSize').textContent = (bytes / 1024).toFixed(1) + ' КБ';
+  document.getElementById('dataUpdated').textContent = state.updatedAt
+    ? new Date(state.updatedAt).toLocaleString('ru-RU')
+    : 'никогда';
+
+  document.getElementById('autoSyncCb').checked = settings.autoSync !== false;
+}
+
+/* ============================================================
+   РЕНДЕР — ВСЕ
+   ============================================================ */
+function renderAll() {
+  renderMonthSelector();
+  renderSidebarCats();
+  renderOverview();
+  renderTxFilters();
+  renderTransactions();
+  renderCatAccordion();
+  renderSettings();
+}
+
+/* ============================================================
+   РОУТИНГ СТРАНИЦ
+   ============================================================ */
+function switchPage(name) {
+  currentPage = name;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === name);
+  });
+
+  const titles = {
+    overview:     { t: 'Обзор',       s: 'Сводка по месяцу' },
+    transactions: { t: 'Транзакции',  s: 'Все операции за период' },
+    categories:   { t: 'Категории',   s: 'Лимиты и распределение' },
+    settings:     { t: 'Настройки',   s: 'Хранилище и данные' }
+  };
+  document.getElementById('topTitle').textContent = titles[name].t;
+  document.getElementById('topSubtitle').textContent = titles[name].s;
+
+  // закрыть мобильное меню
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('open');
+}
+
+/* ============================================================
+   МОДАЛКА
+   ============================================================ */
+function openModal() {
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fAmount').value = '';
+  document.getElementById('fDate').value = todayStr();
+  populateCatSelect();
+  document.getElementById('modalBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('fDesc').focus(), 50);
+}
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+function populateCatSelect() {
+  const sel = document.getElementById('fCat');
+  const cats = CATEGORIES.filter(c => c.type === editingType);
+  sel.innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function saveTransaction() {
+  const desc = document.getElementById('fDesc').value.trim();
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const cat = document.getElementById('fCat').value;
+  const date = document.getElementById('fDate').value || todayStr();
+
+  if (!amount || amount <= 0) {
+    alert('Введи корректную сумму');
+    return;
+  }
+
+  state.transactions.push({
+    id: uid(),
+    type: editingType,
+    category: cat,
+    amount,
+    desc,
+    date
+  });
+  // если новая транзакция вне текущего месяца — переключим
+  if (monthKey(date) !== currentMonth) {
+    currentMonth = monthKey(date);
+  }
+  saveLocal();
+  renderAll();
+  closeModal();
+}
+
+/* ============================================================
+   ЭКСПОРТ / ИМПОРТ JSON
+   ============================================================ */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `finance-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.transactions || !Array.isArray(data.transactions)) {
+        alert('Файл не похож на формат трекера');
+        return;
+      }
+      if (!confirm(`Импортировать ${data.transactions.length} записей? Текущие данные будут заменены.`)) return;
+      state = {
+        transactions: data.transactions,
+        limits: data.limits || {},
+        bills: data.bills || [],
+        updatedAt: Date.now()
+      };
+      saveLocal();
+      renderAll();
+      alert('Импорт завершен');
+    } catch (err) {
+      alert('Не удалось прочитать файл: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function escapeHTML(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============================================================
+   СОБЫТИЯ
+   ============================================================ */
+function bindEvents() {
+  // Навигация
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => {
+    n.addEventListener('click', () => switchPage(n.dataset.page));
+  });
+
+  // Мобильное меню
+  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarBackdrop').classList.toggle('open');
+  });
+  document.getElementById('sidebarBackdrop').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+  });
+
+  // Месяц
+  document.getElementById('monthSelector').addEventListener('change', e => {
+    currentMonth = e.target.value;
+    renderAll();
+  });
+
+  // Добавление
+  document.getElementById('addBtn').addEventListener('click', openModal);
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalBackdrop').addEventListener('click', e => {
+    if (e.target.id === 'modalBackdrop') closeModal();
+  });
+  document.getElementById('modalSave').addEventListener('click', saveTransaction);
+
+  // Тип в модалке
+  document.querySelectorAll('#typeToggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      editingType = b.dataset.type;
+      document.querySelectorAll('#typeToggle button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      populateCatSelect();
+    });
+  });
+
+  // Поиск, фильтры
+  document.getElementById('search').addEventListener('input', e => {
+    currentTxFilter.search = e.target.value;
+    renderTransactions();
+  });
+  document.getElementById('filterCat').addEventListener('change', e => {
+    currentTxFilter.cat = e.target.value;
+    renderTransactions();
+  });
+  document.getElementById('sortBy').addEventListener('change', e => {
+    currentTxFilter.sort = e.target.value;
+    renderTransactions();
+  });
+
+  // Табы
+  document.querySelectorAll('#txTabs .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('#txTabs .tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      currentTxFilter.tab = t.dataset.tab;
+      renderTransactions();
+    });
+  });
+
+  // Экспорт / импорт
+  document.getElementById('exportBtn').addEventListener('click', exportJSON);
+  document.getElementById('exportBtn2').addEventListener('click', exportJSON);
+  document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importBtn2').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', e => {
+    if (e.target.files[0]) importJSON(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  // Очистка
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if (!confirm('Точно удалить все данные? Это нельзя отменить.')) return;
+    state = { transactions: [], limits: {}, bills: [], updatedAt: Date.now() };
+    saveLocal();
+    renderAll();
+  });
+
+  // Firebase
+  document.getElementById('autoSyncCb').addEventListener('change', e => {
+    settings.autoSync = e.target.checked;
+    saveSettings();
+    if (settings.autoSync !== false && currentUser) {
+      syncToFirebase();
+    }
+  });
+  document.getElementById('pushBtn').addEventListener('click', async () => {
+    const r = await syncToFirebase();
+    alert(r.ok ? 'Данные отправлены в Firebase' : 'Ошибка: ' + r.error);
+  });
+  document.getElementById('pullBtn').addEventListener('click', async () => {
+    if (!confirm('Загрузить данные из Firebase? Текущие данные на странице будут заменены.')) return;
+    const r = await loadFromFirebase();
+    alert(r.ok ? 'Данные загружены из Firebase' : 'Ошибка: ' + r.error);
+  });
+
+  // Esc — закрыть модалку
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeBillModal();
+    }
+  });
+
+  /* ============================================================
+     ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ
+     ============================================================ */
+  document.getElementById('addBillBtn').addEventListener('click', () => openBillModal(null));
+  document.getElementById('billModalCancel').addEventListener('click', closeBillModal);
+  document.getElementById('billModalSave').addEventListener('click', saveBill);
+  document.getElementById('billModalBackdrop').addEventListener('click', e => {
+    if (e.target.id === 'billModalBackdrop') closeBillModal();
+  });
+
+  // переключатель регулярности в модалке платежа
+  document.querySelectorAll('#bRecurToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingBillRecur = btn.dataset.recur;
+      document.querySelectorAll('#bRecurToggle button').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+function showAuthOverlay(title, text, mode = 'login') {
+  let overlay = document.getElementById('firebaseAuthOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'firebaseAuthOverlay';
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  const buttonText = mode === 'logout' ? 'Выйти из аккаунта' : 'Войти через Google';
+  overlay.innerHTML = `
+    <div style="width:100%; max-width:420px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-xl); padding:28px; box-shadow:var(--shadow-lg);">
+      <div style="font-family:var(--font-display); font-size:28px; font-weight:600; margin-bottom:8px;">${escapeHTML(title)}</div>
+      <div style="font-size:14px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px;">${escapeHTML(text)}</div>
+      <button id="firebaseAuthBtn" class="btn primary" style="width:100%; justify-content:center; padding:12px 16px;">${buttonText}</button>
+    </div>
+  `;
+
+  document.getElementById('firebaseAuthBtn').addEventListener('click', async () => {
+    try {
+      if (mode === 'logout') {
+        await signOut(firebaseAuth);
+      } else {
+        await signInWithPopup(firebaseAuth, firebaseProvider);
+      }
+    } catch (e) {
+      console.error('Ошибка авторизации', e);
+      alert('Не удалось войти через Google: ' + e.message);
+    }
+  });
+}
+
+function hideAuthOverlay() {
+  const overlay = document.getElementById('firebaseAuthOverlay');
+  if (overlay) overlay.remove();
+}
+
+function setupFirebaseAuth() {
+  const appEl = document.querySelector('.app');
+  appEl.style.display = 'none';
+  showAuthOverlay('Вход в финансовый трекер', 'Данные хранятся в Firebase. Доступ разрешен только владельцу.');
+
+  onAuthStateChanged(firebaseAuth, async (user) => {
+    if (!user) {
+      currentUser = null;
+      firebaseBootstrapped = false;
+      appEl.style.display = 'none';
+      setSyncStatus('local', 'Требуется вход');
+      showAuthOverlay('Вход в финансовый трекер', 'Войди через свой Google-аккаунт, чтобы загрузить данные из Firebase.');
+      return;
+    }
+
+    if (user.email !== FIREBASE_ALLOWED_EMAIL) {
+      currentUser = null;
+      firebaseBootstrapped = false;
+      appEl.style.display = 'none';
+      setSyncStatus('error', 'Доступ закрыт');
+      showAuthOverlay('Доступ закрыт', 'Этот трекер доступен только аккаунту ' + FIREBASE_ALLOWED_EMAIL + '.', 'logout');
+      return;
+    }
+
+    currentUser = user;
+    hideAuthOverlay();
+    appEl.style.display = 'grid';
+
+    if (!firebaseBootstrapped) {
+      firebaseBootstrapped = true;
+      await loadFromFirebase();
+    }
+
+    setSyncStatus('cloud', 'Firebase подключен');
+    renderAll();
+  });
+}
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+function init() {
+  settings.autoSync = settings.autoSync !== false;
+  setSyncStatus('local', 'Требуется вход');
+  bindEvents();
+  renderAll();
+  setupFirebaseAuth();
+}
+
+init();
+
+</script>
+
+</body>
+</html>
